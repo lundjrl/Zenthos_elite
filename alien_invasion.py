@@ -18,7 +18,9 @@ def run_game():
     # Loopback for the game
     while True:
         # Watch for keyboard input
-        gf.check_events()
+        gf.check_events(ship)
+        ship.update()
+        gf.update_screen(ai_settings, screen, ship)
 
         # Redraw the screen
         screen.fill(ai_settings.bg_color)
