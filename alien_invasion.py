@@ -1,6 +1,7 @@
-import pygame
 from settings import Settings
 from ship import Ship
+from pygame.sprite import Group
+import pygame
 import game_functions as gf
 
 
@@ -13,14 +14,18 @@ def run_game():
     pygame.display.set_caption("Zenthos Elite")
     
     # Rendering ship
-    ship = Ship(screen)
+    ship = Ship(ai_settings, screen)
+
+    # Grouping for bullets
+    bullets = Group()
 
     # Loopback for the game
     while True:
         # Watch for keyboard input
-        gf.check_events(ship)
+        gf.check_events(ai_settings, screen, ship, bullets)
         ship.update()
-        gf.update_screen(ai_settings, screen, ship)
+        gf.update_bullets(bullets)
+        gf.update_screen(ai_settings, screen, ship, bullets)
 
         # Redraw the screen
         screen.fill(ai_settings.bg_color)
