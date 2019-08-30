@@ -5,7 +5,7 @@ import sys
 import pygame
 
 
-def check_events(ai_settings, screen, stats, play_button, ship,
+def check_events(ai_settings, screen, stats, scorebd, play_button, ship,
         swarm, bullets):
     """Respond to keypresses and mouse events."""
     for event in pygame.event.get():
@@ -17,12 +17,12 @@ def check_events(ai_settings, screen, stats, play_button, ship,
             check_keyup_events(event, ship)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            check_play_button(ai_settings, screen, stats, play_button, ship,
-                    swarm, bullets, mouse_x, mouse_y)
+            check_play_button(ai_settings, screen, stats, scorebd, play_button,
+                    ship, swarm, bullets, mouse_x, mouse_y)
 
 
-def check_play_button(ai_settings, screen, stats, play_button, ship, swarm,
-        bullets, mouse_x, mouse_y):
+def check_play_button(ai_settings, screen, stats, scorebd, play_button, ship,
+        swarm, bullets, mouse_x, mouse_y):
     """Start a new game when the player clicks Play."""
     button_clicked = play_button.rect.collidepoint(mouse_x, mouse_y)
     if button_clicked and not stats.game_active:
@@ -34,7 +34,13 @@ def check_play_button(ai_settings, screen, stats, play_button, ship, swarm,
         # Reset game stats.
         stats.reset_stats()
         stats.game_active = True
-        
+
+        # Reset the scoreboard images.
+        scorebd.prep_score()
+        scorebd.prep_high_score()
+        scorebd.prep_level()
+        scorebd.prep_ships()
+
         # Empty the list of aliens and bullets.
         swarm.empty()
         bullets.empty()
@@ -107,11 +113,17 @@ def check_bullet_alien_collisions(ai_settings, screen, stats, scorebd, ship,
         for swarm in collisions.values():
             stats.score += ai_settings.alien_points * len(swarm)
             scorebd.prep_score()
+        check_high_score(stats, scorebd)
 
     if len(swarm) == 0:
         # Destroy existing bullets, repopulate fleet, speed up game.
         bullets.empty()
         ai_settings.increase_speed()
+
+        # Increase level
+        stats.level += 1
+        scorebd.prep_level()
+
         create_fleet(ai_settings, screen, ship, swarm)
 
 
@@ -162,12 +174,19 @@ def create_fleet(ai_settings, screen, ship, swarm):
             create_alien(ai_settings, screen, swarm, alien_num, row_num)
 
 
-def update_aliens(ai_settings, stats, screen, ship, swarm, bullets):
+def update_aliens(ai_settings, screen, stats, scorebd, ship, swarm, bullets):
     """Update the positions of all aliens in the fleet."""
     check_fleet_edges(ai_settings, swarm)
     swarm.update()
-    check_aliens_bottom(ai_settings, stats, screen, ship, swarm, bullets)
 
+    # Looking for alien-ship collisions.
+    if pygame.sprite.spritecollideany(ship, swarm):
+        ship_hit(ai_settings, screen, stats, scorebd, ship, swarm, bullets)
+
+    # Looking for aliens past our defenses....
+    check_aliens_bottom(ai_settings, screen, stats, scorebd, ship, swarm,
+            bullets)
+    
 
 def check_fleet_edges(ai_settings, swarm):
     """Respond appropriately if any aliens have reached an edge."""
@@ -184,11 +203,14 @@ def change_fleet_direction(ai_settings, swarm):
     ai_settings.fleet_direction *= -1
 
 
-def ship_hit(ai_settings, stats, screen, ship, swarm, bullets):
+def ship_hit(ai_settings, screen, stats, scorebd, ship, swarm, bullets):
     """Respond to ship being hit by alien."""
     if stats.ships_left > 0:
         # Decrease number of ships.
         stats.ships_left -= 1
+
+        # Update the score.
+        scorebd.prep_ships()
 
         # Empty the list of aliens and bullets.
         swarm.empty()
@@ -205,11 +227,18 @@ def ship_hit(ai_settings, stats, screen, ship, swarm, bullets):
         pygame.mouse.set_visible(True)
 
 
-def check_aliens_bottom(ai_settings, screen, stats, ship, swarm, bullets):
+def check_aliens_bottom(ai_settings, screen, stats, scorebd, ship, swarm,
+        bullets):
     """Check if any aliens have reached the bottom of the screen."""
     screen_rect = screen.get_rect()
     for alien in swarm.sprites():
         if alien.rect.bottom >= screen_rect.bottom:
-            ship_hit(ai_settings, stats, screen, ship, swarm, bullets)
+            ship_hit(ai_settings, screen, stats, scorebd, ship, swarm, bullets)
             break
+
+def check_high_score(stats, scorebd):
+    """Check to see if there's a new high score."""
+    if stats.score > stats.high_score:
+        stats.high_score = stats.score
+        scorebd.prep_high_score()
 

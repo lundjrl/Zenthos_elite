@@ -34,14 +34,14 @@ def run_game():
     # Loopback for the game
     while True:
         # Watch for keyboard input
-        gf.check_events(ai_settings, screen, stats, play_button, ship,
+        gf.check_events(ai_settings, screen, stats, scorebd, play_button, ship,
                 swarm, bullets)
         
         if stats.game_active:
             ship.update()
             gf.update_bullets(ai_settings, screen, stats, scorebd, ship,
                     swarm, bullets)
-            gf.update_aliens(ai_settings, screen, stats, ship,
+            gf.update_aliens(ai_settings, screen, stats, scorebd, ship,
                     swarm, bullets)
 
         gf.update_screen(ai_settings, screen, stats, scorebd, ship, swarm, 
