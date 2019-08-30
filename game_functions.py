@@ -28,6 +28,9 @@ def check_play_button(ai_settings, screen, stats, play_button, ship, swarm,
     if button_clicked and not stats.game_active:
         pygame.mouse.set_visible(False)
 
+        # Reset game settings.
+        ai_settings.initialize_dynamic_settings()
+
         # Reset game stats.
         stats.reset_stats()
         stats.game_active = True
@@ -61,7 +64,7 @@ def check_keyup_events(event, ship):
         ship.moving_left = False
 
 
-def update_screen(ai_settings, screen, stats, ship, swarm, bullets,
+def update_screen(ai_settings, screen, stats, scorebd, ship, swarm, bullets,
         play_button):
     """Update images on the screen and flip to the new screen."""
     screen.fill(ai_settings.bg_color)
@@ -71,6 +74,9 @@ def update_screen(ai_settings, screen, stats, ship, swarm, bullets,
     ship.blitme()
     swarm.draw(screen)
     
+    # Draw score info.
+    scorebd.show_score()
+
     # Draw the play button if the game is inactive.
     if not stats.game_active:
         play_button.draw_button()
@@ -78,7 +84,7 @@ def update_screen(ai_settings, screen, stats, ship, swarm, bullets,
     pygame.display.flip()
 
 
-def update_bullets(ai_settings, screen, ship, swarm, bullets):
+def update_bullets(ai_settings, screen, stats, scorebd, ship, swarm, bullets):
     """Update position of bullets and get rid of old bullets."""
     # Update bullet positions
     bullets.update()
@@ -88,16 +94,24 @@ def update_bullets(ai_settings, screen, ship, swarm, bullets):
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
     
-    check_bullet_alien_collisions(ai_settings, screen, ship, swarm, bullets)
+    check_bullet_alien_collisions(ai_settings, screen, stats, scorebd, ship,
+            swarm, bullets)
 
 
-def check_bullet_alien_collisions(ai_settings, screen, ship, swarm, bullets):
+def check_bullet_alien_collisions(ai_settings, screen, stats, scorebd, ship,
+        swarm, bullets):
     """Respond to bullet-alien collisions then remove both."""
     collisions = pygame.sprite.groupcollide(bullets, swarm, True, True)
 
+    if collisions:
+        for swarm in collisions.values():
+            stats.score += ai_settings.alien_points * len(swarm)
+            scorebd.prep_score()
+
     if len(swarm) == 0:
-        # Destroy existing bullets and repopulate fleet.
+        # Destroy existing bullets, repopulate fleet, speed up game.
         bullets.empty()
+        ai_settings.increase_speed()
         create_fleet(ai_settings, screen, ship, swarm)
 
 
@@ -191,7 +205,7 @@ def ship_hit(ai_settings, stats, screen, ship, swarm, bullets):
         pygame.mouse.set_visible(True)
 
 
-def check_aliens_bottom(ai_settings, stats, screen, ship, swarm, bullets):
+def check_aliens_bottom(ai_settings, screen, stats, ship, swarm, bullets):
     """Check if any aliens have reached the bottom of the screen."""
     screen_rect = screen.get_rect()
     for alien in swarm.sprites():

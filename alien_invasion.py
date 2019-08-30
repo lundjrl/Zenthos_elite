@@ -2,6 +2,7 @@ from settings import Settings
 from game_stats import GameStats
 from ship import Ship
 from button import Button
+from scoreboard import Scoreboard
 from pygame.sprite import Group
 import pygame
 import game_functions as gf
@@ -18,8 +19,9 @@ def run_game():
     # Make the play button
     play_button = Button(ai_settings, screen, "Play")
 
-    # Create an instance to store game stats.
+    # Create an instance to store game stats and create a scoreboard.
     stats = GameStats(ai_settings)
+    scorebd = Scoreboard(ai_settings, screen, stats)
 
     # Rendering objects
     ship = Ship(ai_settings, screen)
@@ -37,11 +39,13 @@ def run_game():
         
         if stats.game_active:
             ship.update()
-            gf.update_bullets(ai_settings, screen, ship, swarm, bullets)
-            gf.update_aliens(ai_settings, stats, screen, ship, swarm, bullets)
+            gf.update_bullets(ai_settings, screen, stats, scorebd, ship,
+                    swarm, bullets)
+            gf.update_aliens(ai_settings, screen, stats, ship,
+                    swarm, bullets)
 
-        gf.update_screen(ai_settings, screen, stats, ship, swarm, bullets,
-                play_button)
+        gf.update_screen(ai_settings, screen, stats, scorebd, ship, swarm, 
+                bullets, play_button)
 
         # Redraw the screen
         screen.fill(ai_settings.bg_color)
